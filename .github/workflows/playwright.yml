@@ -1,0 +1,37 @@
+name: Cucumber Tests
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Chromium and WebKit
+      run: npx playwright install --with-deps chromium webkit
+    - name: Run headed Chromium UI and API tests
+      run: xvfb-run -a npm test
+    - name: Run headed WebKit UI tests
+      run: xvfb-run -a npm run test:webkit
+    - name: Generate Allure report
+      if: always()
+      run: npm run report:allure
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-reports
+        path: |
+          allure-results/
+          allure-report/
+          artifacts/traces/
+          artifacts/videos/
+          junit.xml
+        retention-days: 30
